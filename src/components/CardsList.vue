@@ -9,6 +9,10 @@ export default {
   data() {
     return {
       cards: [],
+      selectValue: [],
+      selectedArchetype: "",
+      resultFoundNumber: 0,
+      emptyArchetypeSearch: ""
     };
   },
   methods: {
@@ -18,25 +22,69 @@ export default {
       axios.get(url).then((response) => {
         this.cards = response.data.data;
         console.log(this.cards)
+
+        this.resultFoundNumber = this.cards.length
       });
     },
+    addCards() {
+      let newUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?num=20&offset=${this.offsetCard}`
+      const url = newUrl;
+
+      axios.get(url).then((response) => {
+        this.cards.push(...response.data.data);
+        console.log(this.cards)
+
+        this.resultFoundNumber = this.cards.length
+      });
+    },
+    initSelect() {
+      const urlArchetypes = "https://db.ygoprodeck.com/api/v7/archetypes.php";
+
+      axios.get(urlArchetypes).then((response) => {
+        this.selectValue = response.data;
+        console.log(this.selectValue)
+      });
+    },
+    filterArchetypes() {
+      if (this.selectedArchetype == "") {
+        this.emptyArchetypeSearch = "Inserisci un input valido"
+      } else {
+        this.emptyArchetypeSearch = ""
+      }
+
+      let urlArchetypes = `https://db.ygoprodeck.com/api/v7/cardinfo.php?archetype=${this.selectedArchetype}`;
+
+      axios.get(urlArchetypes).then((response) => {
+        this.cards = response.data.data;
+        console.log(this.cards)
+
+        this.resultFoundNumber = this.cards.length
+      });
+    }
   },
   mounted() {
     this.searchCards()
+    this.initSelect()
   }
 }
 </script>
 
 <template>
   <div class="content-container px-5">
-    <div class="input-group mb-3 py-3" style="width: 200px;">
-      <input type="text" class="form-control" placeholder="Search Card" aria-label="Search Card"
-        aria-describedby="button-addon2">
-      <button class="btn bg-white  border-dark-subtle" type="button" id="button-addon2">v</button>
+    <div class="input-group py-3" style="width: 200px;">
+      <select class="form-select" v-model="selectedArchetype">
+        <option v-for="archetype in selectValue">{{ archetype.archetype_name }}</option>
+      </select>
+      <button class="btn bg-white" @click="filterArchetypes()">Search</button>
     </div>
 
-    <div class="bg-dark text-white p-3">
-      Found 32 Cards
+    <div v-if="emptyArchetypeSearch !== ''" class="text-danger bg-light rounded-2 p-1 mb-3" style="width: max-content;">
+      {{ emptyArchetypeSearch }}
+    </div>
+
+    <div class="bg-dark text-white p-3 d-flex gap-3 align-items-center">
+      Found {{ resultFoundNumber }} Cards
+      <button v-if="selectedArchetype == ''" class="btn btn-primary" @click="addCards()">Mostra più risultati</button>
     </div>
 
     <div class="cards-container bg-white p-5 d-flex flex-wrap justify-content-center gap-3">
@@ -44,6 +92,8 @@ export default {
         <Cards :singleCard="singleCard"></Cards>
       </div>
     </div>
+
+
   </div>
 </template>
 
